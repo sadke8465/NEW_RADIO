@@ -45,6 +45,7 @@ struct HeaderView: View {
 
 struct TabStrip: View {
     @EnvironmentObject var state: AppState
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 6) {
@@ -81,6 +82,7 @@ struct TabStrip: View {
         )
         .contentShape(Rectangle())
         .onTapGesture { state.switchMode(m) }
+        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.18, extraBounce: 0.03), value: active)
     }
 }
 

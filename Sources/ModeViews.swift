@@ -217,6 +217,7 @@ struct TagList: View {
     let onRetry: () -> Void
 
     @EnvironmentObject var state: AppState
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: Int = 0
     @FocusState private var focused: Bool
 
@@ -239,8 +240,14 @@ struct TagList: View {
                         }
                         .padding(.vertical, 4)
                     }
-                    .onChange(of: selection) { _, new in
-                        withAnimation(.easeInOut(duration: 0.08)) {
+                    .onChange(of: selection) { old, new in
+                        let distance = abs(new - old)
+                        let animation: Animation = reduceMotion
+                            ? .linear(duration: 0.01)
+                            : (distance > 8
+                                ? .interpolatingSpring(stiffness: 330, damping: 38)
+                                : .snappy(duration: 0.16, extraBounce: 0.04))
+                        withAnimation(animation) {
                             proxy.scrollTo(new, anchor: .center)
                         }
                     }
@@ -277,6 +284,7 @@ private struct TagRow: View {
     let name: String
     let count: Int
     let selected: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack {
@@ -299,6 +307,7 @@ private struct TagRow: View {
                 Rectangle().fill(Color.accentColor).frame(width: 2)
             }
         }
+        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.18, extraBounce: 0.03), value: selected)
     }
 }
 
