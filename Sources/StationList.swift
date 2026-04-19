@@ -79,9 +79,13 @@ struct StationList: View {
     private func handle(_ press: KeyPress) -> KeyPress.Result {
         guard !state.showHelp, !stations.isEmpty else { return .ignored }
         switch press.key {
-        case .downArrow, .rightArrow:
+        case .downArrow:
+            move(+1); return .handled
+        case .upArrow:
+            move(-1); return .handled
+        case .rightArrow:
             state.moveSection(+1); return .handled
-        case .upArrow, .leftArrow:
+        case .leftArrow:
             state.moveSection(-1); return .handled
         case .return, .space:
             play(selection); return .handled

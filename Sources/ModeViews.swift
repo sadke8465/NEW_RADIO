@@ -219,6 +219,7 @@ struct TagList: View {
     @EnvironmentObject var state: AppState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: Int = 0
+    @State private var gPressedAt: Date? = nil
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -260,10 +261,14 @@ struct TagList: View {
         .onKeyPress(phases: .down) { press in
             guard !state.showHelp, !tags.isEmpty else { return .ignored }
             switch press.key {
-            case .upArrow, .leftArrow:
-                state.moveSection(-1); return .handled
-            case .downArrow, .rightArrow:
+            case .downArrow:
+                selection = min(tags.count - 1, selection + 1); return .handled
+            case .upArrow:
+                selection = max(0, selection - 1); return .handled
+            case .rightArrow:
                 state.moveSection(+1); return .handled
+            case .leftArrow:
+                state.moveSection(-1); return .handled
             case .return, .space:
                 onSelect(tags[selection]); return .handled
             default: break
@@ -272,6 +277,14 @@ struct TagList: View {
             switch c {
             case "j": selection = min(tags.count - 1, selection + 1); return .handled
             case "k": selection = max(0, selection - 1); return .handled
+            case "g":
+                if let t = gPressedAt, Date().timeIntervalSince(t) < 0.6 {
+                    selection = 0
+                    gPressedAt = nil
+                } else {
+                    gPressedAt = Date()
+                }
+                return .handled
             default: break
             }
             if press.characters == "G" { selection = tags.count - 1; return .handled }

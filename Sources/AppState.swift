@@ -91,10 +91,16 @@ final class AppState: ObservableObject {
     }
 
     func flashStatus(_ text: String) {
-        status = text
+        withAnimation(.easeInOut(duration: 0.15)) {
+            status = text
+        }
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 1_600_000_000)
-            if status == text { status = "" }
+            if status == text {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    status = ""
+                }
+            }
         }
     }
 }

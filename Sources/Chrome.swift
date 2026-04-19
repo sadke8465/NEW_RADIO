@@ -9,7 +9,7 @@ struct HeaderView: View {
             Circle()
                 .fill(player.isPlaying ? Color.green : Color.secondary.opacity(0.5))
                 .frame(width: 7, height: 7)
-                .animation(.easeInOut, value: player.isPlaying)
+                .animation(.snappy(duration: 0.22, extraBounce: 0.04), value: player.isPlaying)
 
             Text("new_radio")
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
@@ -89,6 +89,7 @@ struct TabStrip: View {
 struct NowPlayingBar: View {
     @EnvironmentObject var player: AudioPlayer
     @EnvironmentObject var store: FavoritesStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -99,6 +100,7 @@ struct NowPlayingBar: View {
                     .font(.system(size: 11))
                     .foregroundStyle(player.isPlaying ? Color.green : .secondary)
                     .frame(width: 14)
+                    .contentTransition(.symbolEffect(.replace))
 
                 if let c = player.current {
                     VStack(alignment: .leading, spacing: 1) {
@@ -112,10 +114,12 @@ struct NowPlayingBar: View {
                                 .lineLimit(1)
                         }
                     }
+                    .transition(.opacity)
                 } else {
                     Text("nothing playing")
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundStyle(.secondary)
+                        .transition(.opacity)
                 }
 
                 Spacer(minLength: 6)
@@ -124,6 +128,7 @@ struct NowPlayingBar: View {
                     Image(systemName: "star.fill")
                         .font(.system(size: 10))
                         .foregroundStyle(.yellow)
+                        .transition(.scale.combined(with: .opacity))
                 }
 
                 if player.isBuffering {
@@ -134,6 +139,8 @@ struct NowPlayingBar: View {
 
                 VolumeGauge(value: player.volume)
             }
+            .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.22, extraBounce: 0.04), value: player.current?.id)
+            .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.22, extraBounce: 0.04), value: player.isPlaying)
             HintsBar()
         }
     }
@@ -141,11 +148,14 @@ struct NowPlayingBar: View {
 
 private struct VolumeGauge: View {
     let value: Float
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         HStack(spacing: 2) {
             Image(systemName: value == 0 ? "speaker.slash" : "speaker.wave.2")
                 .font(.system(size: 9))
                 .foregroundStyle(.secondary)
+                .contentTransition(.symbolEffect(.replace))
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.secondary.opacity(0.18))
@@ -154,6 +164,7 @@ private struct VolumeGauge: View {
                 }
             }
             .frame(width: 42, height: 3)
+            .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.16, extraBounce: 0.03), value: value)
         }
     }
 }
@@ -193,7 +204,8 @@ struct HelpOverlay: View {
 
     private let rows: [(String, String)] = [
         ("1 … 4", "switch section"),
-        ("arrow keys", "switch section (←/↑ prev, →/↓ next)"),
+        ("← / →", "switch section (prev / next)"),
+        ("↑ / ↓", "move list selection"),
         ("j / k", "move list selection"),
         ("g / G", "top / bottom"),
         ("↵ / space", "play selected"),
