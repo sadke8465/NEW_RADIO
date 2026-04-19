@@ -141,8 +141,22 @@ struct NowPlayingBar: View {
             }
             .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.22, extraBounce: 0.04), value: player.current?.id)
             .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.22, extraBounce: 0.04), value: player.isPlaying)
+
+            if player.current != nil {
+                AudioVisualizer(isPlaying: player.isPlaying)
+                    .transition(
+                        reduceMotion
+                            ? .opacity
+                            : .asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .bottom)),
+                                removal: .opacity
+                              )
+                    )
+            }
+
             HintsBar()
         }
+        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.22, extraBounce: 0.04), value: player.current?.id)
     }
 }
 

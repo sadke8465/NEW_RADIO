@@ -11,6 +11,7 @@ Feels like a terminal. Looks like a widget.
 
 - Top stations, name search, genres, favorites, recents
 - Pure keyboard navigation (vim-style + arrows)
+- Animated audio visualizer in the now-playing bar
 - Persistent favorites and play history (UserDefaults)
 - Ad-hoc signed, no API key
 - Small resizable window (~380×560) with translucent Apple chrome
@@ -67,6 +68,7 @@ Sources/
   Chrome.swift           header, tab strip, now-playing bar, help overlay
   StationList.swift      reusable keyboard-navigable list
   ModeViews.swift        one view per tab
+  Visualizer.swift       animated audio visualizer bars
 Resources/
   Info.plist
 build.sh                 swiftc -> .app bundle
