@@ -178,6 +178,7 @@ private struct HintsBar: View {
             hint("↵", "play")
             hint("f", "star")
             hint("S", "find")
+            hint("v", "viz")
             hint("?", "help")
             Spacer(minLength: 0)
             hint("esc", "back")
@@ -215,6 +216,7 @@ struct HelpOverlay: View {
         ("F", "star current"),
         ("S or /", "search"),
         ("− / =", "volume down / up"),
+        ("v", "toggle visualizer"),
         ("esc", "close / clear"),
         ("?", "toggle help"),
         ("⌘W / ⌘Q", "close / quit")

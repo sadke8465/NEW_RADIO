@@ -35,6 +35,7 @@ final class AppState: ObservableObject {
     @Published var mode: AppMode = .stations
     @Published private(set) var modeShiftDirection: Int = AppState.noModeShiftDirection
     @Published var showHelp: Bool = false
+    @Published var showVisualizer: Bool = false
     @Published var selectedGenre: String? = nil
     @Published var status: String = ""
 
@@ -44,6 +45,7 @@ final class AppState: ObservableObject {
 
     let player: AudioPlayer
     let store: FavoritesStore
+    let visualizerSettings = VisualizerSettings()
 
     init() {
         let store = FavoritesStore()
