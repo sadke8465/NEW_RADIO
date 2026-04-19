@@ -354,7 +354,7 @@ struct LoadingView: View {
 }
 
 private struct LoadingDots: View {
-    /// Phase velocity for the sine wave that drives dot pulsing.
+    /// Phase velocity in radians per second for the sine wave that drives dot pulsing.
     private let animationSpeed: Double = 4.5
     /// Phase shift between neighboring dots to create a wave.
     private let phaseOffset: Double = 0.65

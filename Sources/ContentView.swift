@@ -69,7 +69,7 @@ struct ContentView: View {
         if reduceMotion {
             return .opacity
         }
-        if state.modeShiftDirection == 0 {
+        if state.modeShiftDirection == AppState.noModeShiftDirection {
             return .opacity
         }
         let insertionEdge: Edge = state.modeShiftDirection >= 0 ? .trailing : .leading
