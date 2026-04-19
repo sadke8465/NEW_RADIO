@@ -20,7 +20,8 @@ Feels like a terminal. Looks like a widget.
 | key | action |
 |-----|--------|
 | `1` … `4` | switch section (top / tags / stars / recent) |
-| arrow keys | switch section (`←`/`↑` previous, `→`/`↓` next) |
+| `←` / `→` | switch section (previous / next) |
+| `↑` / `↓` | move list selection |
 | `j` | move selection down |
 | `k` | move selection up |
 | `g g` | jump to top |
