@@ -347,12 +347,15 @@ struct LoadingView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Loading")
+        .accessibilityValue(text)
     }
 }
 
 private struct LoadingDots: View {
     var body: some View {
-        TimelineView(.animation(minimumInterval: 0.05)) { timeline in
+        TimelineView(.animation(minimumInterval: 0.1)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             HStack(spacing: 5) {
                 ForEach(0..<3, id: \.self) { i in
