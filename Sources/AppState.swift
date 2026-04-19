@@ -60,8 +60,7 @@ final class AppState: ObservableObject {
         let sections = AppMode.sectionModes
         guard !sections.isEmpty else { return }
         let current = sections.firstIndex(of: mode) ?? 0
-        let next = (current + delta).quotientAndRemainder(dividingBy: sections.count).remainder
-        let wrapped = next < 0 ? next + sections.count : next
+        let wrapped = ((current + delta) % sections.count + sections.count) % sections.count
         switchMode(sections[wrapped])
     }
 
