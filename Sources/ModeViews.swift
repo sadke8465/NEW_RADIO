@@ -356,12 +356,19 @@ struct LoadingView: View {
 private struct LoadingDots: View {
     /// Phase velocity for the sine wave that drives dot pulsing.
     private let animationSpeed: Double = 4.5
+    /// Phase shift between neighboring dots to create a wave.
     private let phaseOffset: Double = 0.65
+    /// 30 FPS update cadence for smooth-enough, low-overhead animation.
     private let timelineInterval: Double = 1.0 / 30.0
+    /// Minimum dot opacity.
     private let baseOpacity: Double = 0.35
+    /// Additional opacity applied at peak wave.
     private let opacityRange: Double = 0.65
+    /// Dot diameter.
     private let dotSize: CGFloat = 5
+    /// Minimum dot scale.
     private let baseScale: CGFloat = 0.75
+    /// Additional scale applied at peak wave.
     private let scaleRange: CGFloat = 0.45
 
     var body: some View {
