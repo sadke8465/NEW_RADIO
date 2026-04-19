@@ -25,7 +25,38 @@ struct AudioVisualizer: View {
     // Smooth amplitude envelope so bars don't pop in/out.
     @State private var amplitude: Double = 0
 
+    // MARK: - Oscillator tuning
+
+    /// Frequency-curve shape: where the "mid" band peaks (0 = left, 1 = right).
+    private let midFrequencyPosition: Double = 0.45
+
+    /// Each oscillator is (speed, per-bar phase spread, global phase offset, amplitude).
+    private let oscillators: [(speed: Double, spread: Double, offset: Double, amp: Double)] = [
+        (speed: 2.1,  spread: 0.55, offset: 0.0, amp: 0.16),   // slow base
+        (speed: 4.6,  spread: 0.82, offset: 1.3, amp: 0.14),   // medium
+        (speed: 7.3,  spread: 0.35, offset: 2.7, amp: 0.10),   // fast detail
+        (speed: 11.1, spread: 1.15, offset: 0.8, amp: 0.07),   // shimmer
+    ]
+    /// A slower "swell" that raises/lowers the whole bar field.
+    private let swellSpeed: Double = 0.9
+    private let swellSpread: Double = 0.12
+    private let swellAmp: Double = 0.08
+
+    /// Static bar height used for the reduced-motion fallback.
+    private let reducedMotionHeight: CGFloat = 8
+
     var body: some View {
+        if reduceMotion {
+            // Accessibility: show a static bar pattern instead of animating.
+            staticBars
+        } else {
+            animatedBars
+        }
+    }
+
+    // MARK: - Animated bars (default)
+
+    private var animatedBars: some View {
         TimelineView(.animation) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             HStack(alignment: .bottom, spacing: barSpacing) {
@@ -39,17 +70,28 @@ struct AudioVisualizer: View {
             .frame(height: maxHeight)
         }
         .onChange(of: isPlaying) { _, playing in
-            let anim: Animation = reduceMotion
-                ? .linear(duration: 0.01)
-                : .snappy(duration: 0.28, extraBounce: 0.06)
-            withAnimation(anim) {
+            withAnimation(.snappy(duration: 0.28, extraBounce: 0.06)) {
                 amplitude = playing ? 1.0 : 0.0
             }
         }
         .onAppear {
-            // No animation on first appear — just snap to the correct state.
             amplitude = isPlaying ? 1.0 : 0.0
         }
+        .accessibilityHidden(true)
+    }
+
+    // MARK: - Static bars (reduced motion)
+
+    private var staticBars: some View {
+        HStack(alignment: .bottom, spacing: barSpacing) {
+            ForEach(0..<barCount, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(Color.green.opacity(isPlaying ? 0.65 : 0.25))
+                    .frame(width: barWidth, height: isPlaying ? reducedMotionHeight : minHeight)
+            }
+        }
+        .frame(height: maxHeight)
+        .animation(.linear(duration: 0.01), value: isPlaying)
         .accessibilityHidden(true)
     }
 
@@ -62,18 +104,17 @@ struct AudioVisualizer: View {
 
         // Base amplitude curve: slight bass boost on left, mid presence, treble sparkle.
         let bass   = max(0, 1.0 - pos * 2.0) * 0.22
-        let mid    = (1.0 - abs(pos - 0.45) * 2.0).clamped(to: 0...1) * 0.18
+        let mid    = (1.0 - abs(pos - midFrequencyPosition) * 2.0).clamped(to: 0...1) * 0.18
         let treble = max(0, pos - 0.55) * 0.15
 
-        // Several oscillators at different speeds give organic, non-repeating movement.
-        let o1 = sin(t * 2.1  + Double(i) * 0.55)           * 0.16
-        let o2 = sin(t * 4.6  + Double(i) * 0.82 + 1.3)     * 0.14
-        let o3 = sin(t * 7.3  + Double(i) * 0.35 + 2.7)     * 0.10
-        let o4 = sin(t * 11.1 + Double(i) * 1.15 + 0.8)     * 0.07
-        // A slower "swell" that moves the whole bar field up and down.
-        let swell = sin(t * 0.9 + Double(i) * 0.12) * 0.08
+        // Sum the oscillators for organic, non-repeating movement.
+        var osc = 0.0
+        for o in oscillators {
+            osc += sin(t * o.speed + Double(i) * o.spread + o.offset) * o.amp
+        }
+        let swell = sin(t * swellSpeed + Double(i) * swellSpread) * swellAmp
 
-        let raw = bass + mid + treble + o1 + o2 + o3 + o4 + swell + 0.40
+        let raw = bass + mid + treble + osc + swell + 0.40
         let clamped = raw.clamped(to: 0...1)
 
         let h = minHeight + CGFloat(clamped * amplitude) * (maxHeight - minHeight)
@@ -82,7 +123,7 @@ struct AudioVisualizer: View {
 
     // MARK: - Color
 
-    /// Bars are green-tinted at full height and fade to secondary at rest.
+    /// Bars are green-tinted at full height and fade toward transparent at rest.
     private func barFill(height: CGFloat) -> some ShapeStyle {
         let ratio = (height - minHeight) / max(maxHeight - minHeight, 1)
         return Color.green.opacity(0.4 + Double(ratio) * 0.5)
