@@ -54,9 +54,14 @@ final class AppState: ObservableObject {
     }
 
     func switchMode(_ m: AppMode) {
+        let oldMode = mode
         showHelp = false
         // Direction relies on AppMode raw-value order matching UI tab order.
-        modeShiftDirection = m.rawValue >= mode.rawValue ? 1 : -1
+        if m == oldMode {
+            modeShiftDirection = AppState.noModeShiftDirection
+        } else {
+            modeShiftDirection = m.rawValue >= oldMode.rawValue ? 1 : -1
+        }
         if m != .genres { selectedGenre = nil }
         mode = m
     }
