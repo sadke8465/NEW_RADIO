@@ -199,7 +199,7 @@ struct HelpOverlay: View {
         (".", "stop"),
         ("f", "star selected"),
         ("F", "star current"),
-        ("S / /", "search"),
+        ("S or /", "search"),
         ("− / =", "volume down / up"),
         ("esc", "close / clear"),
         ("?", "toggle help"),
