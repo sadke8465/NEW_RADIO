@@ -331,16 +331,60 @@ struct RecentsView: View {
 
 struct LoadingView: View {
     let text: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         VStack(spacing: 8) {
             Spacer()
-            ProgressView().controlSize(.small)
+            if reduceMotion {
+                ProgressView().controlSize(.small)
+            } else {
+                LoadingDots()
+            }
             Text(text)
                 .font(.system(size: 11, design: .monospaced))
                 .foregroundStyle(.secondary)
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Loading")
+        .accessibilityValue(text)
+    }
+}
+
+private struct LoadingDots: View {
+    /// Phase velocity in radians per second for the sine wave that drives dot pulsing.
+    private let animationSpeed: Double = 4.5
+    /// Phase shift between neighboring dots to create a wave.
+    private let phaseOffset: Double = 0.65
+    /// Minimum dot opacity.
+    private let baseOpacity: Double = 0.35
+    /// Additional opacity applied at peak wave.
+    private let opacityRange: Double = 0.65
+    /// Dot diameter.
+    private let dotSize: CGFloat = 5
+    /// Minimum dot scale.
+    private let baseScale: CGFloat = 0.75
+    /// Additional scale applied at peak wave.
+    private let scaleRange: CGFloat = 0.45
+
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 5) {
+                ForEach(0..<3, id: \.self) { i in
+                    let phase = (t * animationSpeed) + (Double(i) * phaseOffset)
+                    let wave = (sin(phase) + 1) / 2
+                    Circle()
+                        .fill(Color.accentColor.opacity(baseOpacity + (wave * opacityRange)))
+                        .frame(width: dotSize, height: dotSize)
+                        .scaleEffect(baseScale + (wave * scaleRange))
+                }
+            }
+            .frame(height: 10)
+        }
+        .accessibilityHidden(true)
     }
 }
 

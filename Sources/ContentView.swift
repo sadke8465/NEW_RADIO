@@ -30,12 +30,7 @@ struct ContentView: View {
                     }
                 }
                 .id(state.mode)
-                .transition(
-                    .asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.985)),
-                        removal: .opacity
-                    )
-                )
+                .transition(tabTransition)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 Divider().opacity(0.18)
@@ -68,6 +63,21 @@ struct ContentView: View {
         .background(GlobalShortcuts())
         .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.22, extraBounce: 0.06), value: state.showHelp)
         .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.28, extraBounce: 0.08), value: state.mode)
+    }
+
+    private var tabTransition: AnyTransition {
+        if reduceMotion {
+            return .opacity
+        }
+        if state.modeShiftDirection == AppState.noModeShiftDirection {
+            return .opacity
+        }
+        let insertionEdge: Edge = state.modeShiftDirection >= 0 ? .trailing : .leading
+        let removalEdge: Edge = state.modeShiftDirection >= 0 ? .leading : .trailing
+        return .asymmetric(
+            insertion: .move(edge: insertionEdge).combined(with: .opacity),
+            removal: .move(edge: removalEdge).combined(with: .opacity)
+        )
     }
 }
 

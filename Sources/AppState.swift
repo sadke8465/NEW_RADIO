@@ -30,7 +30,10 @@ enum AppMode: Int, CaseIterable, Identifiable {
 
 @MainActor
 final class AppState: ObservableObject {
+    static let noModeShiftDirection = 0
+
     @Published var mode: AppMode = .stations
+    @Published private(set) var modeShiftDirection: Int = AppState.noModeShiftDirection
     @Published var showHelp: Bool = false
     @Published var selectedGenre: String? = nil
     @Published var status: String = ""
@@ -51,9 +54,16 @@ final class AppState: ObservableObject {
     }
 
     func switchMode(_ m: AppMode) {
+        let oldMode = mode
+        showHelp = false
+        // Direction relies on AppMode raw-value order matching UI tab order.
+        if m == oldMode {
+            modeShiftDirection = AppState.noModeShiftDirection
+        } else {
+            modeShiftDirection = m.rawValue >= oldMode.rawValue ? 1 : -1
+        }
         if m != .genres { selectedGenre = nil }
         mode = m
-        showHelp = false
     }
 
     func moveSection(_ delta: Int) {
