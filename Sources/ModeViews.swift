@@ -52,7 +52,7 @@ struct SearchView: View {
                     .foregroundStyle(.secondary)
                 Text("›")
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(.accentColor)
+                    .foregroundStyle(Color.accentColor)
                 TextField("", text: $query, prompt: Text("station name…").foregroundColor(.secondary.opacity(0.6)))
                     .font(.system(size: 12, design: .monospaced))
                     .textFieldStyle(.plain)
