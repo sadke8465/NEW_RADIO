@@ -10,6 +10,7 @@ struct NewRadioApp: App {
                 .environmentObject(state)
                 .environmentObject(state.player)
                 .environmentObject(state.store)
+                .environmentObject(state.visualizerSettings)
                 .frame(
                     minWidth: 340, idealWidth: 380, maxWidth: 520,
                     minHeight: 460, idealHeight: 560, maxHeight: 820

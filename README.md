@@ -33,6 +33,7 @@ Feels like a terminal. Looks like a widget.
 | `F` | star / unstar the *currently playing* station |
 | `S` or `/` | open search & focus input |
 | `−` / `=` | volume down / up |
+| `v` | toggle visualizer |
 | `esc` | back out (close help → clear filter → clear search) |
 | `?` | toggle help overlay |
 | `⌘W` / `⌘Q` | standard macOS close / quit |
@@ -67,6 +68,7 @@ Sources/
   Chrome.swift           header, tab strip, now-playing bar, help overlay
   StationList.swift      reusable keyboard-navigable list
   ModeViews.swift        one view per tab
+  Visualizer.swift       audio visualizer (settings, presets, driver)
 Resources/
   Info.plist
 build.sh                 swiftc -> .app bundle

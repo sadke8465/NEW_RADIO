@@ -4,6 +4,7 @@ struct ContentView: View {
     @EnvironmentObject var state: AppState
     @EnvironmentObject var player: AudioPlayer
     @EnvironmentObject var store: FavoritesStore
+    @EnvironmentObject var vizSettings: VisualizerSettings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -35,6 +36,23 @@ struct ContentView: View {
 
                 Divider().opacity(0.18)
 
+                if state.showVisualizer {
+                    VisualizerDriver(
+                        settings: vizSettings,
+                        isPlaying: player.isPlaying,
+                        volume: player.volume
+                    )
+                    .frame(height: 70)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .bottom)),
+                            removal: .opacity.combined(with: .scale(scale: 0.95, anchor: .bottom))
+                        )
+                    )
+                }
+
                 NowPlayingBar()
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
@@ -63,6 +81,7 @@ struct ContentView: View {
         .background(GlobalShortcuts())
         .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.22, extraBounce: 0.06), value: state.showHelp)
         .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.28, extraBounce: 0.08), value: state.mode)
+        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.24, extraBounce: 0.06), value: state.showVisualizer)
     }
 
     private var tabTransition: AnyTransition {
@@ -85,6 +104,7 @@ private struct GlobalShortcuts: View {
     @EnvironmentObject var state: AppState
     @EnvironmentObject var player: AudioPlayer
     @EnvironmentObject var store: FavoritesStore
+    @EnvironmentObject var vizSettings: VisualizerSettings
 
     var body: some View {
         // Invisible buttons that register app-wide keyboard shortcuts.
@@ -118,6 +138,10 @@ private struct GlobalShortcuts: View {
                         store.toggleFavorite(c)
                         state.flashStatus(store.isFavorite(c) ? "starred" : "unstarred")
                     }
+                }
+                key("v") {
+                    state.showVisualizer.toggle()
+                    state.flashStatus(state.showVisualizer ? "viz on" : "viz off")
                 }
             }
         }
