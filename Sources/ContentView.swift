@@ -69,6 +69,9 @@ struct ContentView: View {
         if reduceMotion {
             return .opacity
         }
+        if state.modeShiftDirection == 0 {
+            return .opacity
+        }
         let insertionEdge: Edge = state.modeShiftDirection >= 0 ? .trailing : .leading
         let removalEdge: Edge = state.modeShiftDirection >= 0 ? .leading : .trailing
         return .asymmetric(

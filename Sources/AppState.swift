@@ -31,7 +31,7 @@ enum AppMode: Int, CaseIterable, Identifiable {
 @MainActor
 final class AppState: ObservableObject {
     @Published var mode: AppMode = .stations
-    @Published private(set) var modeShiftDirection: Int = 1
+    @Published private(set) var modeShiftDirection: Int = 0
     @Published var showHelp: Bool = false
     @Published var selectedGenre: String? = nil
     @Published var status: String = ""
