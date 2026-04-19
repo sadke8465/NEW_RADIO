@@ -66,94 +66,9 @@ struct StationList: View {
     var body: some View {
         Group {
             if stations.isEmpty {
-                VStack {
-                    Spacer()
-                    Text(emptyText)
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                emptyView
             } else {
-                VStack(spacing: 0) {
-                    // A3: Filter bar
-                    if filterActive {
-                        HStack(spacing: 6) {
-                            Text("filter")
-                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                                .foregroundStyle(.secondary)
-                            Text("›")
-                                .font(.system(size: 11, design: .monospaced))
-                                .foregroundStyle(Color.accentColor)
-                            TextField("", text: $filterText,
-                                      prompt: Text("type to filter…")
-                                        .foregroundColor(.secondary.opacity(0.6)))
-                                .font(.system(size: 12, design: .monospaced))
-                                .textFieldStyle(.plain)
-                                .focused($filterFocused)
-                                .onSubmit {
-                                    filterFocused = false
-                                    focused = true
-                                }
-                            if !filterText.isEmpty {
-                                Text("\(displayStations.count)/\(stations.count)")
-                                    .font(.system(size: 10, design: .monospaced))
-                                    .foregroundStyle(.secondary.opacity(0.7))
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.primary.opacity(0.04))
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .move(edge: .top)),
-                            removal: .opacity
-                        ))
-                    }
-
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            LazyVStack(spacing: 0) {
-                                let ds = displayStations
-                                ForEach(Array(ds.enumerated()), id: \.element.id) { idx, st in
-                                    StationRow(
-                                        index: idx,
-                                        station: st,
-                                        selected: idx == selection,
-                                        playing: player.current?.id == st.id && player.isPlaying,
-                                        favorite: store.isFavorite(st),
-                                        showsIndex: showsIndex,
-                                        selectionNS: selectionNS
-                                    )
-                                    .id(idx)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture(count: 2) { play(idx) }
-                                    .onTapGesture { selection = idx }
-                                    // B1: staggered entrance
-                                    .opacity(entranceRevealed ? 1 : 0)
-                                    .offset(y: entranceRevealed ? 0 : 4)
-                                    .animation(
-                                        reduceMotion ? .linear(duration: 0.01) :
-                                            .snappy(duration: 0.25, extraBounce: 0.02)
-                                            .delay(Double(min(idx, 15)) * 0.018),
-                                        value: entranceRevealed
-                                    )
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        }
-                        .onChange(of: selection) { old, new in
-                            let distance = abs(new - old)
-                            let animation: Animation = reduceMotion
-                                ? .linear(duration: 0.01)
-                                : (distance > 8
-                                    ? .interpolatingSpring(stiffness: 330, damping: 38)
-                                    : .snappy(duration: 0.16, extraBounce: 0.04))
-                            withAnimation(animation) {
-                                proxy.scrollTo(new, anchor: .center)
-                            }
-                        }
-                    }
-                }
+                populatedView
             }
         }
         .focusable()
@@ -204,6 +119,112 @@ struct StationList: View {
         }
         .animation(reduceMotion ? .linear(duration: 0.01)
                    : .snappy(duration: 0.2, extraBounce: 0.04), value: filterActive)
+    }
+
+    // MARK: - Extracted sub-views
+
+    private var emptyView: some View {
+        VStack {
+            Spacer()
+            Text(emptyText)
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var populatedView: some View {
+        VStack(spacing: 0) {
+            // A3: Filter bar
+            if filterActive {
+                filterBarView
+            }
+            stationScrollView
+        }
+    }
+
+    private var filterBarView: some View {
+        HStack(spacing: 6) {
+            Text("filter")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.secondary)
+            Text("›")
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(Color.accentColor)
+            TextField("", text: $filterText,
+                      prompt: Text("type to filter…")
+                        .foregroundColor(.secondary.opacity(0.6)))
+                .font(.system(size: 12, design: .monospaced))
+                .textFieldStyle(.plain)
+                .focused($filterFocused)
+                .onSubmit {
+                    filterFocused = false
+                    focused = true
+                }
+            if !filterText.isEmpty {
+                Text("\(displayStations.count)/\(stations.count)")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.secondary.opacity(0.7))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.primary.opacity(0.04))
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .move(edge: .top)),
+            removal: .opacity
+        ))
+    }
+
+    private var stationScrollView: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    let ds = displayStations
+                    ForEach(Array(ds.enumerated()), id: \.element.id) { idx, st in
+                        stationRow(idx: idx, station: st)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .onChange(of: selection) { old, new in
+                let distance = abs(new - old)
+                let animation: Animation = reduceMotion
+                    ? .linear(duration: 0.01)
+                    : (distance > 8
+                        ? .interpolatingSpring(stiffness: 330, damping: 38)
+                        : .snappy(duration: 0.16, extraBounce: 0.04))
+                withAnimation(animation) {
+                    proxy.scrollTo(new, anchor: .center)
+                }
+            }
+        }
+    }
+
+    private func stationRow(idx: Int, station st: Station) -> some View {
+        StationRow(
+            index: idx,
+            station: st,
+            selected: idx == selection,
+            playing: player.current?.id == st.id && player.isPlaying,
+            favorite: store.isFavorite(st),
+            showsIndex: showsIndex,
+            selectionNS: selectionNS
+        )
+        .id(idx)
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { play(idx) }
+        .onTapGesture { selection = idx }
+        // B1: staggered entrance
+        .opacity(entranceRevealed ? 1 : 0)
+        .offset(y: entranceRevealed ? 0 : 4)
+        .animation(
+            reduceMotion ? .linear(duration: 0.01) :
+                .snappy(duration: 0.25, extraBounce: 0.02)
+                .delay(Double(min(idx, 15)) * 0.018),
+            value: entranceRevealed
+        )
     }
 
     // MARK: - Key handling
@@ -289,6 +310,10 @@ struct StationList: View {
     private func move(_ delta: Int, in ds: [Station]) {
         if ds.isEmpty { return }
         selection = max(0, min(ds.count - 1, selection + delta))
+    }
+
+    private func play(_ i: Int) {
+        play(i, in: displayStations)
     }
 
     private func play(_ i: Int, in ds: [Station]) {
