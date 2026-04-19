@@ -191,8 +191,7 @@ struct HelpOverlay: View {
 
     private let rows: [(String, String)] = [
         ("1 … 4", "switch section"),
-        ("←/↑", "prev section"),
-        ("→/↓", "next section"),
+        ("arrow keys", "switch section (←/↑ prev, →/↓ next)"),
         ("j / k", "move list selection"),
         ("g / G", "top / bottom"),
         ("↵ / space", "play selected"),
