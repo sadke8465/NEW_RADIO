@@ -354,8 +354,10 @@ struct LoadingView: View {
 }
 
 private struct LoadingDots: View {
+    /// Phase velocity for the sine wave that drives dot pulsing.
     private let animationSpeed: Double = 4.5
     private let phaseOffset: Double = 0.65
+    private let timelineInterval: Double = 1.0 / 30.0
     private let baseOpacity: Double = 0.35
     private let opacityRange: Double = 0.65
     private let dotSize: CGFloat = 5
@@ -363,7 +365,7 @@ private struct LoadingDots: View {
     private let scaleRange: CGFloat = 0.45
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 0.1)) { timeline in
+        TimelineView(.animation(minimumInterval: timelineInterval)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             HStack(spacing: 5) {
                 ForEach(0..<3, id: \.self) { i in
