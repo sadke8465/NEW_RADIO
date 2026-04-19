@@ -90,7 +90,7 @@ struct SearchView: View {
                     Text("type and press ↵ to search")
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundStyle(.secondary)
-                    Text("esc to clear  ·  / to refocus")
+                    Text("esc to clear  ·  S or / to refocus")
                         .font(.system(size: 10, design: .monospaced))
                         .foregroundStyle(.secondary.opacity(0.7))
                     Spacer()
@@ -253,8 +253,10 @@ struct TagList: View {
         .onKeyPress(phases: .down) { press in
             guard !state.showHelp, !tags.isEmpty else { return .ignored }
             switch press.key {
-            case .upArrow:    selection = max(0, selection - 1); return .handled
-            case .downArrow:  selection = min(tags.count - 1, selection + 1); return .handled
+            case .upArrow, .leftArrow:
+                state.moveSection(-1); return .handled
+            case .downArrow, .rightArrow:
+                state.moveSection(+1); return .handled
             case .return, .space:
                 onSelect(tags[selection]); return .handled
             default: break
@@ -305,7 +307,7 @@ private struct TagRow: View {
 struct FavoritesView: View {
     @EnvironmentObject var store: FavoritesStore
     var body: some View {
-        StationList(stations: store.favorites, emptyText: "no favorites yet — press s on a station")
+        StationList(stations: store.favorites, emptyText: "no favorites yet — press f on a station")
     }
 }
 

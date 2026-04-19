@@ -5,6 +5,7 @@ enum AppMode: Int, CaseIterable, Identifiable {
     case stations, search, genres, favorites, recents
 
     var id: Int { rawValue }
+    static let sectionModes: [AppMode] = [.stations, .genres, .favorites, .recents]
 
     var title: String {
         switch self {
@@ -16,13 +17,13 @@ enum AppMode: Int, CaseIterable, Identifiable {
         }
     }
 
-    var key: String {
+    var key: String? {
         switch self {
         case .stations: return "1"
-        case .search:   return "2"
-        case .genres:   return "3"
-        case .favorites: return "4"
-        case .recents:  return "5"
+        case .search:   return nil
+        case .genres:   return "2"
+        case .favorites: return "3"
+        case .recents:  return "4"
         }
     }
 }
@@ -53,6 +54,15 @@ final class AppState: ObservableObject {
         if m != .genres { selectedGenre = nil }
         mode = m
         showHelp = false
+    }
+
+    func moveSection(_ delta: Int) {
+        let sections = AppMode.sectionModes
+        guard !sections.isEmpty else { return }
+        let current = sections.firstIndex(of: mode) ?? 0
+        let next = (current + delta).quotientAndRemainder(dividingBy: sections.count).remainder
+        let wrapped = next < 0 ? next + sections.count : next
+        switchMode(sections[wrapped])
     }
 
     func handleEscape() {
