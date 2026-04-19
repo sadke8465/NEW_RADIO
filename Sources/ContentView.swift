@@ -68,12 +68,12 @@ private struct GlobalShortcuts: View {
         ZStack {
             Group {
                 key("1") { state.switchMode(.stations) }
-                key("2") { state.switchMode(.search) }
-                key("3") { state.switchMode(.genres) }
-                key("4") { state.switchMode(.favorites) }
-                key("5") { state.switchMode(.recents) }
+                key("2") { state.switchMode(.genres) }
+                key("3") { state.switchMode(.favorites) }
+                key("4") { state.switchMode(.recents) }
                 key("?") { state.showHelp.toggle() }
                 key("/") { state.requestSearchFocus() }
+                key("S") { state.requestSearchFocus() }
                 key(.escape) { state.handleEscape() }
             }
             Group {
@@ -90,7 +90,7 @@ private struct GlobalShortcuts: View {
                     player.bumpVolume(+0.05)
                     state.flashStatus("vol \(Int(player.volume * 100))")
                 }
-                key("S") {
+                key("F") {
                     if let c = player.current {
                         store.toggleFavorite(c)
                         state.flashStatus(store.isFavorite(c) ? "starred" : "unstarred")

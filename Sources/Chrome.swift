@@ -48,7 +48,7 @@ struct TabStrip: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            ForEach(AppMode.allCases) { m in
+            ForEach(AppMode.sectionModes) { m in
                 tab(m)
             }
             Spacer(minLength: 0)
@@ -59,10 +59,12 @@ struct TabStrip: View {
     private func tab(_ m: AppMode) -> some View {
         let active = state.mode == m
         HStack(spacing: 4) {
-            Text(m.key)
-                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                .foregroundStyle(active ? .primary : .secondary)
-                .opacity(active ? 0.9 : 0.55)
+            if let key = m.key {
+                Text(key)
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundStyle(active ? .primary : .secondary)
+                    .opacity(active ? 0.9 : 0.55)
+            }
             Text(m.title)
                 .font(.system(size: 11, weight: active ? .semibold : .regular, design: .monospaced))
                 .foregroundStyle(active ? .primary : .secondary)
@@ -161,8 +163,8 @@ private struct HintsBar: View {
         HStack(spacing: 10) {
             hint("j/k", "move")
             hint("↵", "play")
-            hint("s", "star")
-            hint("/", "find")
+            hint("f", "star")
+            hint("S", "find")
             hint("?", "help")
             Spacer(minLength: 0)
             hint("esc", "back")
@@ -188,16 +190,16 @@ struct HelpOverlay: View {
     @EnvironmentObject var state: AppState
 
     private let rows: [(String, String)] = [
-        ("1 … 5", "switch tab"),
-        ("j / ↓", "move down"),
-        ("k / ↑", "move up"),
+        ("1 … 4", "switch section"),
+        ("arrow keys", "switch section (←/↑ prev, →/↓ next)"),
+        ("j / k", "move list selection"),
         ("g / G", "top / bottom"),
         ("↵ / space", "play selected"),
         ("p", "play / pause"),
         (".", "stop"),
-        ("s", "star selected"),
-        ("S", "star current"),
-        ("/", "search"),
+        ("f", "star selected"),
+        ("F", "star current"),
+        ("S or /", "search"),
         ("− / =", "volume down / up"),
         ("esc", "close / clear"),
         ("?", "toggle help"),

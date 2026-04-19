@@ -19,17 +19,18 @@ Feels like a terminal. Looks like a widget.
 
 | key | action |
 |-----|--------|
-| `1` … `5` | switch tab (top / find / tags / stars / recent) |
-| `j` / `↓` | move selection down |
-| `k` / `↑` | move selection up |
+| `1` … `4` | switch section (top / tags / stars / recent) |
+| arrow keys | switch section (`←`/`↑` previous, `→`/`↓` next) |
+| `j` | move selection down |
+| `k` | move selection up |
 | `g g` | jump to top |
 | `G` | jump to bottom |
 | `↵` or `space` | play selected station |
 | `p` | toggle play / pause |
 | `.` | stop |
-| `s` | star / unstar selected station |
-| `S` | star / unstar the *currently playing* station |
-| `/` | jump to search & focus input |
+| `f` | star / unstar selected station |
+| `F` | star / unstar the *currently playing* station |
+| `S` or `/` | open search & focus input |
 | `−` / `=` | volume down / up |
 | `esc` | back out (close help → clear filter → clear search) |
 | `?` | toggle help overlay |

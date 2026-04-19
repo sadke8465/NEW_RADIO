@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A keyboard-navigable list of stations. Owns selection and handles j/k/enter/s.
+/// A keyboard-navigable list of stations. Owns selection and handles j/k/enter/f.
 /// Global shortcuts are not handled here — they live in ContentView.
 struct StationList: View {
     let stations: [Station]
@@ -72,10 +72,10 @@ struct StationList: View {
     private func handle(_ press: KeyPress) -> KeyPress.Result {
         guard !state.showHelp, !stations.isEmpty else { return .ignored }
         switch press.key {
-        case .downArrow:
-            move(+1); return .handled
-        case .upArrow:
-            move(-1); return .handled
+        case .downArrow, .rightArrow:
+            state.moveSection(+1); return .handled
+        case .upArrow, .leftArrow:
+            state.moveSection(-1); return .handled
         case .return, .space:
             play(selection); return .handled
         default:
@@ -94,7 +94,7 @@ struct StationList: View {
                 gPressedAt = Date()
             }
             return .handled
-        case "s":
+        case "f":
             let st = stations[selection]
             store.toggleFavorite(st)
             state.flashStatus(store.isFavorite(st) ? "starred" : "unstarred")
