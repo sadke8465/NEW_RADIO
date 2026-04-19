@@ -354,17 +354,25 @@ struct LoadingView: View {
 }
 
 private struct LoadingDots: View {
+    private let animationSpeed: Double = 4.5
+    private let phaseOffset: Double = 0.65
+    private let baseOpacity: Double = 0.35
+    private let opacityRange: Double = 0.65
+    private let dotSize: CGFloat = 5
+    private let baseScale: CGFloat = 0.75
+    private let scaleRange: CGFloat = 0.45
+
     var body: some View {
         TimelineView(.animation(minimumInterval: 0.1)) { timeline in
             let t = timeline.date.timeIntervalSinceReferenceDate
             HStack(spacing: 5) {
                 ForEach(0..<3, id: \.self) { i in
-                    let phase = (t * 4.5) + (Double(i) * 0.65)
+                    let phase = (t * animationSpeed) + (Double(i) * phaseOffset)
                     let wave = (sin(phase) + 1) / 2
                     Circle()
-                        .fill(Color.accentColor.opacity(0.35 + (wave * 0.65)))
-                        .frame(width: 5, height: 5)
-                        .scaleEffect(0.75 + (wave * 0.45))
+                        .fill(Color.accentColor.opacity(baseOpacity + (wave * opacityRange)))
+                        .frame(width: dotSize, height: dotSize)
+                        .scaleEffect(baseScale + (wave * scaleRange))
                 }
             }
             .frame(height: 10)
