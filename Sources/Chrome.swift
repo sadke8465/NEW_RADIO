@@ -3,6 +3,7 @@ import SwiftUI
 struct HeaderView: View {
     @EnvironmentObject var state: AppState
     @EnvironmentObject var player: AudioPlayer
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 8) {
@@ -21,6 +22,7 @@ struct HeaderView: View {
 
             Spacer(minLength: 6)
 
+            // B6: flash status with pop + slide animation
             if !state.status.isEmpty {
                 Text(state.status)
                     .font(.system(size: 11, design: .monospaced))
@@ -28,7 +30,10 @@ struct HeaderView: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Color.secondary.opacity(0.12), in: Capsule())
-                    .transition(.opacity)
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.85).combined(with: .opacity),
+                        removal: .opacity.combined(with: .move(edge: .top))
+                    ))
             }
 
             Text("?")
@@ -39,13 +44,18 @@ struct HeaderView: View {
                 .onTapGesture { state.showHelp.toggle() }
                 .help("Help (?)")
         }
-        .animation(.easeInOut(duration: 0.15), value: state.status)
+        .animation(
+            reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.2, extraBounce: 0.06),
+            value: state.status
+        )
     }
 }
 
 struct TabStrip: View {
     @EnvironmentObject var state: AppState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// B4: Namespace for sliding tab indicator.
+    @Namespace private var tabNS
 
     var body: some View {
         HStack(spacing: 6) {
@@ -73,16 +83,31 @@ struct TabStrip: View {
         .padding(.horizontal, 7)
         .padding(.vertical, 3)
         .background(
-            RoundedRectangle(cornerRadius: 5)
-                .fill(active ? Color.primary.opacity(0.09) : Color.clear)
+            // B4: matchedGeometryEffect slides the indicator between tabs
+            Group {
+                if active {
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(Color.primary.opacity(0.09))
+                        .matchedGeometryEffect(id: "activeTab", in: tabNS)
+                } else {
+                    Color.clear
+                }
+            }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 5)
-                .stroke(active ? Color.primary.opacity(0.18) : Color.clear, lineWidth: 0.5)
+            Group {
+                if active {
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(Color.primary.opacity(0.18), lineWidth: 0.5)
+                        .matchedGeometryEffect(id: "activeTabBorder", in: tabNS)
+                } else {
+                    Color.clear
+                }
+            }
         )
         .contentShape(Rectangle())
         .onTapGesture { state.switchMode(m) }
-        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.18, extraBounce: 0.03), value: active)
+        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.22, extraBounce: 0.06), value: state.mode)
     }
 }
 
@@ -103,6 +128,7 @@ struct NowPlayingBar: View {
                     .contentTransition(.symbolEffect(.replace))
 
                 if let c = player.current {
+                    // B3: push transition on station change
                     VStack(alignment: .leading, spacing: 1) {
                         Text(c.name)
                             .font(.system(size: 12, weight: .medium))
@@ -114,7 +140,11 @@ struct NowPlayingBar: View {
                                 .lineLimit(1)
                         }
                     }
-                    .transition(.opacity)
+                    .id(c.id)
+                    .transition(.asymmetric(
+                        insertion: .push(from: .bottom).combined(with: .opacity),
+                        removal: .push(from: .bottom).combined(with: .opacity)
+                    ))
                 } else {
                     Text("nothing playing")
                         .font(.system(size: 12, design: .monospaced))
@@ -177,7 +207,7 @@ private struct HintsBar: View {
             hint("j/k", "move")
             hint("↵", "play")
             hint("f", "star")
-            hint("S", "find")
+            hint("/", "filter")
             hint("v", "viz")
             hint("?", "help")
             Spacer(minLength: 0)
@@ -206,17 +236,24 @@ struct HelpOverlay: View {
     private let rows: [(String, String)] = [
         ("1 … 4", "switch section"),
         ("← / →", "switch section (prev / next)"),
+        ("Tab", "cycle all sections"),
         ("↑ / ↓", "move list selection"),
         ("j / k", "move list selection"),
-        ("g / G", "top / bottom"),
+        ("Nj / Nk", "move N items (e.g. 5j)"),
+        ("g g / G", "top / bottom"),
+        ("Ctrl+d/u", "page down / up"),
+        ("PgDn/PgUp", "page down / up"),
         ("↵ / space", "play selected"),
         ("p", "play / pause"),
         (".", "stop"),
         ("f", "star selected"),
         ("F", "star current"),
-        ("S or /", "search"),
+        ("/", "filter current list"),
+        ("S", "search"),
+        ("r", "reload tab"),
         ("− / =", "volume down / up"),
         ("v", "toggle visualizer"),
+        ("V", "cycle viz preset"),
         ("esc", "close / clear"),
         ("?", "toggle help"),
         ("⌘W / ⌘Q", "close / quit")
@@ -224,7 +261,10 @@ struct HelpOverlay: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.35)
+            // B8: material blur backdrop instead of solid color
+            Color.clear
+                .background(.ultraThinMaterial)
+                .opacity(0.85)
                 .onTapGesture { state.showHelp = false }
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -236,16 +276,19 @@ struct HelpOverlay: View {
                         .foregroundStyle(.secondary)
                 }
                 Divider().opacity(0.3)
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(rows, id: \.0) { r in
-                        HStack(alignment: .firstTextBaseline, spacing: 10) {
-                            Text(r.0)
-                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                                .frame(width: 74, alignment: .leading)
-                                .foregroundStyle(.primary)
-                            Text(r.1)
-                                .font(.system(size: 11, design: .monospaced))
-                                .foregroundStyle(.secondary)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(rows, id: \.0) { r in
+                            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                Text(r.0)
+                                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                    // Wider than original 74 to fit new keybinding labels like "Ctrl+d/u"
+                                    .frame(width: 80, alignment: .leading)
+                                    .foregroundStyle(.primary)
+                                Text(r.1)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
