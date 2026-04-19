@@ -188,8 +188,9 @@ struct VisualizerDriver: View {
             return Array(repeating: 0, count: 6)
         }
         let t = date.timeIntervalSinceReferenceDate
-        // Ensure a minimum visual presence even at very low volume.
-        let v = CGFloat(max(0.3, volume))
+        // Ensure dots stay visible even at very low volume.
+        let minimumVisualVolume: Float = 0.3
+        let v = CGFloat(max(minimumVisualVolume, volume))
 
         return (0..<6).map { i in
             let f = Self.freqs[i]
