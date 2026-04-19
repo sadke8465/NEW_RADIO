@@ -282,6 +282,7 @@ struct HelpOverlay: View {
                             HStack(alignment: .firstTextBaseline, spacing: 10) {
                                 Text(r.0)
                                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                    // Wider than original 74 to fit new keybinding labels like "Ctrl+d/u"
                                     .frame(width: 80, alignment: .leading)
                                     .foregroundStyle(.primary)
                                 Text(r.1)

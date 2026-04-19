@@ -1,5 +1,29 @@
 import SwiftUI
 
+/// Shared helper for accumulating vim-style numeric count prefixes (e.g. `5j`).
+/// Used by both StationList and TagList.
+struct CountBuffer {
+    var buffer: String = ""
+    var time: Date? = nil
+
+    /// Append a digit. Returns the current buffer string (for flashing).
+    mutating func accumulate(_ digit: Character) {
+        if let t = time, Date().timeIntervalSince(t) > 0.8 { buffer = "" }
+        buffer.append(digit)
+        time = Date()
+    }
+
+    /// Read and reset the count. Returns 1 when empty/expired.
+    mutating func consume() -> Int {
+        if let t = time, Date().timeIntervalSince(t) > 0.8 { buffer = ""; time = nil }
+        let count = Int(buffer) ?? 1
+        buffer = ""; time = nil
+        return max(1, count)
+    }
+
+    mutating func clear() { buffer = ""; time = nil }
+}
+
 /// A keyboard-navigable list of stations. Owns selection and handles j/k/enter/f.
 /// Global shortcuts are not handled here — they live in ContentView.
 struct StationList: View {
@@ -22,8 +46,7 @@ struct StationList: View {
     @Namespace private var selectionNS
 
     /// A2: Numeric count prefix buffer.
-    @State private var countBuffer: String = ""
-    @State private var countBufferTime: Date? = nil
+    @State private var countBuf = CountBuffer()
 
     /// A3: Inline filter.
     @State private var filterActive: Bool = false
@@ -183,19 +206,6 @@ struct StationList: View {
                    : .snappy(duration: 0.2, extraBounce: 0.04), value: filterActive)
     }
 
-    // MARK: - A2 count prefix
-
-    private func consumeCount() -> Int {
-        if let t = countBufferTime, Date().timeIntervalSince(t) > 0.8 {
-            countBuffer = ""
-            countBufferTime = nil
-        }
-        let count = Int(countBuffer) ?? 1
-        countBuffer = ""
-        countBufferTime = nil
-        return max(1, count)
-    }
-
     // MARK: - Key handling
 
     private func handle(_ press: KeyPress) -> KeyPress.Result {
@@ -205,13 +215,9 @@ struct StationList: View {
 
         // A2: accumulate digit presses into count buffer
         if let digit = press.characters.first, digit.isNumber, press.modifiers.isEmpty {
-            if !countBuffer.isEmpty || digit != "0" {
-                if let t = countBufferTime, Date().timeIntervalSince(t) > 0.8 {
-                    countBuffer = ""
-                }
-                countBuffer.append(digit)
-                countBufferTime = Date()
-                state.flashStatus(countBuffer)
+            if !countBuf.buffer.isEmpty || digit != "0" {
+                countBuf.accumulate(digit)
+                state.flashStatus(countBuf.buffer)
                 return .handled
             }
         }
@@ -220,15 +226,15 @@ struct StationList: View {
 
         switch press.key {
         case .downArrow:
-            move(+consumeCount(), in: ds); return .handled
+            move(+countBuf.consume(), in: ds); return .handled
         case .upArrow:
-            move(-consumeCount(), in: ds); return .handled
+            move(-countBuf.consume(), in: ds); return .handled
         case .rightArrow:
-            clearCount(); state.moveSection(+1); return .handled
+            countBuf.clear(); state.moveSection(+1); return .handled
         case .leftArrow:
-            clearCount(); state.moveSection(-1); return .handled
+            countBuf.clear(); state.moveSection(-1); return .handled
         case .return, .space:
-            clearCount(); play(selection, in: ds); return .handled
+            countBuf.clear(); play(selection, in: ds); return .handled
         // A1: hardware page keys
         case .pageDown:
             move(+pageSize, in: ds); return .handled
@@ -247,10 +253,10 @@ struct StationList: View {
 
         let c = press.characters.lowercased()
         switch c {
-        case "j": move(+consumeCount(), in: ds); return .handled
-        case "k": move(-consumeCount(), in: ds); return .handled
+        case "j": move(+countBuf.consume(), in: ds); return .handled
+        case "k": move(-countBuf.consume(), in: ds); return .handled
         case "g":
-            clearCount()
+            countBuf.clear()
             if let t = gPressedAt, Date().timeIntervalSince(t) < 0.6 {
                 selection = 0
                 gPressedAt = nil
@@ -259,7 +265,7 @@ struct StationList: View {
             }
             return .handled
         case "f":
-            clearCount()
+            countBuf.clear()
             let st = ds[selection]
             store.toggleFavorite(st)
             state.flashStatus(store.isFavorite(st) ? "starred" : "unstarred")
@@ -267,7 +273,7 @@ struct StationList: View {
         default: break
         }
         if press.characters == "G" {
-            clearCount(); selection = ds.count - 1; return .handled
+            countBuf.clear(); selection = ds.count - 1; return .handled
         }
         // A3: activate inline filter with /  (not in search mode)
         if press.characters == "/" && state.mode != .search {
@@ -279,11 +285,6 @@ struct StationList: View {
     }
 
     // MARK: - Helpers
-
-    private func clearCount() {
-        countBuffer = ""
-        countBufferTime = nil
-    }
 
     private func move(_ delta: Int, in ds: [Station]) {
         if ds.isEmpty { return }

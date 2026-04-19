@@ -293,8 +293,7 @@ struct TagList: View {
     @Namespace private var tagSelNS
 
     /// A2: Numeric count prefix buffer.
-    @State private var countBuffer: String = ""
-    @State private var countBufferTime: Date? = nil
+    @State private var countBuf = CountBuffer()
 
     /// B1: Staggered entrance.
     @State private var entranceRevealed: Bool = false
@@ -367,13 +366,9 @@ struct TagList: View {
 
             // A2: accumulate digit presses
             if let digit = press.characters.first, digit.isNumber, press.modifiers.isEmpty {
-                if !countBuffer.isEmpty || digit != "0" {
-                    if let t = countBufferTime, Date().timeIntervalSince(t) > 0.8 {
-                        countBuffer = ""
-                    }
-                    countBuffer.append(digit)
-                    countBufferTime = Date()
-                    state.flashStatus(countBuffer)
+                if !countBuf.buffer.isEmpty || digit != "0" {
+                    countBuf.accumulate(digit)
+                    state.flashStatus(countBuf.buffer)
                     return .handled
                 }
             }
@@ -382,15 +377,15 @@ struct TagList: View {
 
             switch press.key {
             case .downArrow:
-                tagMove(+consumeCount()); return .handled
+                tagMove(+countBuf.consume()); return .handled
             case .upArrow:
-                tagMove(-consumeCount()); return .handled
+                tagMove(-countBuf.consume()); return .handled
             case .rightArrow:
-                clearCount(); state.moveSection(+1); return .handled
+                countBuf.clear(); state.moveSection(+1); return .handled
             case .leftArrow:
-                clearCount(); state.moveSection(-1); return .handled
+                countBuf.clear(); state.moveSection(-1); return .handled
             case .return, .space:
-                clearCount(); onSelect(tags[selection]); return .handled
+                countBuf.clear(); onSelect(tags[selection]); return .handled
             case .pageDown:
                 tagMove(+pageSize); return .handled
             case .pageUp:
@@ -407,10 +402,10 @@ struct TagList: View {
 
             let c = press.characters.lowercased()
             switch c {
-            case "j": tagMove(+consumeCount()); return .handled
-            case "k": tagMove(-consumeCount()); return .handled
+            case "j": tagMove(+countBuf.consume()); return .handled
+            case "k": tagMove(-countBuf.consume()); return .handled
             case "g":
-                clearCount()
+                countBuf.clear()
                 if let t = gPressedAt, Date().timeIntervalSince(t) < 0.6 {
                     selection = 0
                     gPressedAt = nil
@@ -421,23 +416,10 @@ struct TagList: View {
             default: break
             }
             if press.characters == "G" {
-                clearCount(); selection = tags.count - 1; return .handled
+                countBuf.clear(); selection = tags.count - 1; return .handled
             }
             return .ignored
         }
-    }
-
-    private func consumeCount() -> Int {
-        if let t = countBufferTime, Date().timeIntervalSince(t) > 0.8 {
-            countBuffer = ""; countBufferTime = nil
-        }
-        let count = Int(countBuffer) ?? 1
-        countBuffer = ""; countBufferTime = nil
-        return max(1, count)
-    }
-
-    private func clearCount() {
-        countBuffer = ""; countBufferTime = nil
     }
 
     private func tagMove(_ delta: Int) {
