@@ -331,16 +331,42 @@ struct RecentsView: View {
 
 struct LoadingView: View {
     let text: String
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         VStack(spacing: 8) {
             Spacer()
-            ProgressView().controlSize(.small)
+            if reduceMotion {
+                ProgressView().controlSize(.small)
+            } else {
+                LoadingDots()
+            }
             Text(text)
                 .font(.system(size: 11, design: .monospaced))
                 .foregroundStyle(.secondary)
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct LoadingDots: View {
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 0.05)) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
+            HStack(spacing: 5) {
+                ForEach(0..<3, id: \.self) { i in
+                    let phase = (t * 4.5) + (Double(i) * 0.65)
+                    let wave = (sin(phase) + 1) / 2
+                    Circle()
+                        .fill(Color.accentColor.opacity(0.35 + (wave * 0.65)))
+                        .frame(width: 5, height: 5)
+                        .scaleEffect(0.75 + (wave * 0.45))
+                }
+            }
+            .frame(height: 10)
+        }
+        .accessibilityHidden(true)
     }
 }
 

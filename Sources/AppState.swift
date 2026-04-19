@@ -31,6 +31,7 @@ enum AppMode: Int, CaseIterable, Identifiable {
 @MainActor
 final class AppState: ObservableObject {
     @Published var mode: AppMode = .stations
+    @Published private(set) var modeShiftDirection: Int = 1
     @Published var showHelp: Bool = false
     @Published var selectedGenre: String? = nil
     @Published var status: String = ""
@@ -51,6 +52,7 @@ final class AppState: ObservableObject {
     }
 
     func switchMode(_ m: AppMode) {
+        modeShiftDirection = m.rawValue >= mode.rawValue ? 1 : -1
         if m != .genres { selectedGenre = nil }
         mode = m
         showHelp = false
