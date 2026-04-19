@@ -110,45 +110,80 @@ private struct GlobalShortcuts: View {
         // Invisible buttons that register app-wide keyboard shortcuts.
         ZStack {
             Group {
-                key("1") { state.switchMode(.stations) }
-                key("2") { state.switchMode(.genres) }
-                key("3") { state.switchMode(.favorites) }
-                key("4") { state.switchMode(.recents) }
+                // A8: guard most shortcuts when help is shown
+                guardedKey("1") { state.switchMode(.stations) }
+                guardedKey("2") { state.switchMode(.genres) }
+                guardedKey("3") { state.switchMode(.favorites) }
+                guardedKey("4") { state.switchMode(.recents) }
                 key("?") { state.showHelp.toggle() }
-                key("/") { state.requestSearchFocus() }
-                key("S") { state.requestSearchFocus() }
+                guardedKey("/") { state.requestSearchFocus() }
+                guardedKey("S") { state.requestSearchFocus() }
                 key(.escape) { state.handleEscape() }
             }
             Group {
-                key("p") {
+                guardedKey("p") {
                     player.toggle()
                     state.flashStatus(player.isPlaying ? "play" : "pause")
                 }
-                key(".") { player.stop(); state.flashStatus("stop") }
-                key("-") {
+                guardedKey(".") { player.stop(); state.flashStatus("stop") }
+                guardedKey("-") {
                     player.bumpVolume(-0.05)
                     state.flashStatus("vol \(Int(player.volume * 100))")
                 }
-                key("=") {
+                guardedKey("=") {
                     player.bumpVolume(+0.05)
                     state.flashStatus("vol \(Int(player.volume * 100))")
                 }
-                key("F") {
+                guardedKey("F") {
                     if let c = player.current {
                         store.toggleFavorite(c)
                         state.flashStatus(store.isFavorite(c) ? "starred" : "unstarred")
                     }
                 }
-                key("v") {
+                guardedKey("v") {
                     state.showVisualizer.toggle()
                     state.flashStatus(state.showVisualizer ? "viz on" : "viz off")
                 }
+            }
+            Group {
+                // A6: Shift+V to cycle visualizer preset
+                guardedKey("V") {
+                    vizSettings.cyclePreset()
+                    state.flashStatus(vizSettings.currentPresetName)
+                }
+                // A7: r to reload current tab
+                guardedKey("r") {
+                    state.requestReload()
+                    state.flashStatus("reload")
+                }
+                // A4: Tab / Shift+Tab to cycle all sections including search
+                Button(action: {
+                    guard !state.showHelp else { return }
+                    state.moveSectionAll(+1)
+                }) { EmptyView() }
+                    .keyboardShortcut(.tab, modifiers: [])
+                    .buttonStyle(.plain)
+                Button(action: {
+                    guard !state.showHelp else { return }
+                    state.moveSectionAll(-1)
+                }) { EmptyView() }
+                    .keyboardShortcut(.tab, modifiers: [.shift])
+                    .buttonStyle(.plain)
             }
         }
         .frame(width: 0, height: 0)
         .opacity(0)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+
+    /// A8: Shortcut that is silently ignored when the help overlay is shown.
+    @ViewBuilder
+    private func guardedKey(_ s: String, _ action: @escaping () -> Void) -> some View {
+        key(s) {
+            guard !state.showHelp else { return }
+            action()
+        }
     }
 
     @ViewBuilder

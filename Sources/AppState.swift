@@ -6,6 +6,7 @@ enum AppMode: Int, CaseIterable, Identifiable {
 
     var id: Int { rawValue }
     static let sectionModes: [AppMode] = [.stations, .genres, .favorites, .recents]
+    static let allModes: [AppMode] = [.stations, .search, .genres, .favorites, .recents]
 
     var title: String {
         switch self {
@@ -43,6 +44,12 @@ final class AppState: ObservableObject {
     @Published var escTick: Int = 0
     @Published var focusSearchTick: Int = 0
 
+    /// A5: Per-tab selection persistence — keyed by a caller-chosen string.
+    @Published var tabSelections: [String: Int] = [:]
+
+    /// A7: Reload signal — views observe this to re-fetch their data.
+    @Published var reloadTick: Int = 0
+
     let player: AudioPlayer
     let store: FavoritesStore
     let visualizerSettings = VisualizerSettings()
@@ -76,6 +83,15 @@ final class AppState: ObservableObject {
         switchMode(sections[wrapped])
     }
 
+    /// A4: Cycle through ALL modes including search.
+    func moveSectionAll(_ delta: Int) {
+        let all = AppMode.allModes
+        guard !all.isEmpty else { return }
+        let current = all.firstIndex(of: mode) ?? 0
+        let wrapped = ((current + delta) % all.count + all.count) % all.count
+        switchMode(all[wrapped])
+    }
+
     func handleEscape() {
         if showHelp { showHelp = false; return }
         if mode == .genres, selectedGenre != nil {
@@ -90,6 +106,11 @@ final class AppState: ObservableObject {
         showHelp = false
         switchMode(.search)
         focusSearchTick &+= 1
+    }
+
+    /// A7: Ask the current tab to reload its data.
+    func requestReload() {
+        reloadTick &+= 1
     }
 
     func flashStatus(_ text: String) {

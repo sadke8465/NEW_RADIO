@@ -21,19 +21,25 @@ Feels like a terminal. Looks like a widget.
 |-----|--------|
 | `1` … `4` | switch section (top / tags / stars / recent) |
 | `←` / `→` | switch section (previous / next) |
+| `Tab` / `Shift+Tab` | cycle all sections (including search) |
 | `↑` / `↓` | move list selection |
-| `j` | move selection down |
-| `k` | move selection up |
+| `j` / `k` | move selection down / up |
+| `Nj` / `Nk` | move N items (e.g. `5j` moves 5 down) |
 | `g g` | jump to top |
 | `G` | jump to bottom |
+| `Ctrl+d` / `Ctrl+u` | page down / page up |
+| `Page Down` / `Page Up` | page down / page up |
 | `↵` or `space` | play selected station |
 | `p` | toggle play / pause |
 | `.` | stop |
 | `f` | star / unstar selected station |
 | `F` | star / unstar the *currently playing* station |
-| `S` or `/` | open search & focus input |
+| `/` | filter current list (in-list fuzzy find) |
+| `S` | open search & focus input |
+| `r` | reload current tab |
 | `−` / `=` | volume down / up |
 | `v` | toggle visualizer |
+| `V` | cycle visualizer preset |
 | `esc` | back out (close help → clear filter → clear search) |
 | `?` | toggle help overlay |
 | `⌘W` / `⌘Q` | standard macOS close / quit |

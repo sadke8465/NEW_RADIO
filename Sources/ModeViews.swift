@@ -12,23 +12,37 @@ struct TopStationsView: View {
         ZStack {
             if loading && stations.isEmpty {
                 LoadingView(text: "loading top stations…")
+                    .transition(.opacity)
             } else if let e = errorText, stations.isEmpty {
                 ErrorView(text: e, retry: { Task { await load() } })
+                    .transition(.opacity)
             } else {
-                StationList(stations: stations, emptyText: "no stations")
+                StationList(stations: stations, emptyText: "no stations", persistKey: "stations")
+                    .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
             }
         }
         .task { if stations.isEmpty { await load() } }
+        // A7: reload on request
+        .onChange(of: state.reloadTick) { _, _ in
+            if state.mode == .stations { Task { await load() } }
+        }
     }
 
     private func load() async {
         loading = true
-        defer { loading = false }
+        defer {
+            withAnimation(.snappy(duration: 0.25, extraBounce: 0.04)) { loading = false }
+        }
         do {
-            stations = try await RadioBrowserAPI.shared.topStations(limit: 100)
-            errorText = nil
+            let result = try await RadioBrowserAPI.shared.topStations(limit: 100)
+            withAnimation(.snappy(duration: 0.25, extraBounce: 0.04)) {
+                stations = result
+                errorText = nil
+            }
         } catch {
-            errorText = error.localizedDescription
+            withAnimation(.snappy(duration: 0.25, extraBounce: 0.04)) {
+                errorText = error.localizedDescription
+            }
         }
     }
 }
@@ -78,24 +92,30 @@ struct SearchView: View {
 
             Divider().opacity(0.18)
 
-            if loading {
-                LoadingView(text: "searching…")
-            } else if let e = errorText {
-                ErrorView(text: e, retry: runSearch)
-            } else if didRun {
-                StationList(stations: results, emptyText: "no results")
-            } else {
-                VStack(spacing: 6) {
-                    Spacer()
-                    Text("type and press ↵ to search")
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                    Text("esc to clear  ·  S or / to focus")
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundStyle(.secondary.opacity(0.7))
-                    Spacer()
+            ZStack {
+                if loading {
+                    LoadingView(text: "searching…")
+                        .transition(.opacity)
+                } else if let e = errorText {
+                    ErrorView(text: e, retry: runSearch)
+                        .transition(.opacity)
+                } else if didRun {
+                    StationList(stations: results, emptyText: "no results")
+                        .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+                } else {
+                    VStack(spacing: 6) {
+                        Spacer()
+                        Text("type and press ↵ to search")
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                        Text("esc to clear  ·  S or / to focus")
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(.secondary.opacity(0.7))
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .onAppear { fieldFocused = true }
@@ -115,6 +135,10 @@ struct SearchView: View {
                 fieldFocused = true
             }
         }
+        // A7: reload re-runs last search
+        .onChange(of: state.reloadTick) { _, _ in
+            if state.mode == .search && didRun { runSearch() }
+        }
     }
 
     private func runSearch() {
@@ -122,14 +146,19 @@ struct SearchView: View {
         guard !q.isEmpty else { return }
         fieldFocused = false
         Task {
-            loading = true
+            withAnimation(.snappy(duration: 0.22)) { loading = true }
             errorText = nil
-            defer { loading = false }
+            defer { withAnimation(.snappy(duration: 0.22)) { loading = false } }
             do {
-                results = try await RadioBrowserAPI.shared.search(name: q)
-                didRun = true
+                let r = try await RadioBrowserAPI.shared.search(name: q)
+                withAnimation(.snappy(duration: 0.22)) {
+                    results = r
+                    didRun = true
+                }
             } catch {
-                errorText = error.localizedDescription
+                withAnimation(.snappy(duration: 0.22)) {
+                    errorText = error.localizedDescription
+                }
             }
         }
     }
@@ -173,12 +202,18 @@ struct GenresView: View {
                     .background(Color.primary.opacity(0.04))
                     Divider().opacity(0.18)
 
-                    if loading && stations.isEmpty {
-                        LoadingView(text: "loading \(g)…")
-                    } else if let e = errorText, stations.isEmpty {
-                        ErrorView(text: e, retry: { Task { await loadStations(g) } })
-                    } else {
-                        StationList(stations: stations, emptyText: "no stations for \(g)")
+                    ZStack {
+                        if loading && stations.isEmpty {
+                            LoadingView(text: "loading \(g)…")
+                                .transition(.opacity)
+                        } else if let e = errorText, stations.isEmpty {
+                            ErrorView(text: e, retry: { Task { await loadStations(g) } })
+                                .transition(.opacity)
+                        } else {
+                            StationList(stations: stations, emptyText: "no stations for \(g)",
+                                        persistKey: "genre_stations")
+                                .transition(.opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+                        }
                     }
                 }
                 .task(id: g) { await loadStations(g) }
@@ -194,20 +229,52 @@ struct GenresView: View {
         .onChange(of: state.selectedGenre) { _, new in
             if new == nil { stations = [] }
         }
+        // A7: reload
+        .onChange(of: state.reloadTick) { _, _ in
+            if state.mode == .genres {
+                if let g = state.selectedGenre {
+                    Task { await loadStations(g) }
+                } else {
+                    Task { await loadTags() }
+                }
+            }
+        }
     }
 
     private func loadTags() async {
-        loading = true; defer { loading = false }
-        do { tags = try await RadioBrowserAPI.shared.topTags(limit: 120); errorText = nil }
-        catch { errorText = error.localizedDescription }
+        loading = true; defer {
+            withAnimation(.snappy(duration: 0.25, extraBounce: 0.04)) { loading = false }
+        }
+        do {
+            let result = try await RadioBrowserAPI.shared.topTags(limit: 120)
+            withAnimation(.snappy(duration: 0.25, extraBounce: 0.04)) {
+                tags = result; errorText = nil
+            }
+        } catch {
+            withAnimation(.snappy(duration: 0.25, extraBounce: 0.04)) {
+                errorText = error.localizedDescription
+            }
+        }
     }
 
     private func loadStations(_ name: String) async {
-        loading = true; defer { loading = false }
-        do { stations = try await RadioBrowserAPI.shared.stationsByTag(name); errorText = nil }
-        catch { errorText = error.localizedDescription }
+        loading = true; defer {
+            withAnimation(.snappy(duration: 0.25, extraBounce: 0.04)) { loading = false }
+        }
+        do {
+            let result = try await RadioBrowserAPI.shared.stationsByTag(name)
+            withAnimation(.snappy(duration: 0.25, extraBounce: 0.04)) {
+                stations = result; errorText = nil
+            }
+        } catch {
+            withAnimation(.snappy(duration: 0.25, extraBounce: 0.04)) {
+                errorText = error.localizedDescription
+            }
+        }
     }
 }
+
+// MARK: - Tag List
 
 struct TagList: View {
     let tags: [RadioTag]
@@ -222,21 +289,43 @@ struct TagList: View {
     @State private var gPressedAt: Date? = nil
     @FocusState private var focused: Bool
 
+    /// B2: Namespace for selection highlight.
+    @Namespace private var tagSelNS
+
+    /// A2: Numeric count prefix buffer.
+    @State private var countBuffer: String = ""
+    @State private var countBufferTime: Date? = nil
+
+    /// B1: Staggered entrance.
+    @State private var entranceRevealed: Bool = false
+
     var body: some View {
         Group {
             if loading && tags.isEmpty {
                 LoadingView(text: "loading tags…")
+                    .transition(.opacity)
             } else if let e = errorText, tags.isEmpty {
                 ErrorView(text: e, retry: onRetry)
+                    .transition(.opacity)
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             ForEach(Array(tags.enumerated()), id: \.element.id) { idx, t in
-                                TagRow(name: t.name, count: t.stationcount, selected: idx == selection)
+                                TagRow(name: t.name, count: t.stationcount,
+                                       selected: idx == selection, selectionNS: tagSelNS)
                                     .id(idx)
                                     .contentShape(Rectangle())
                                     .onTapGesture { selection = idx; onSelect(t) }
+                                    // B1: staggered entrance
+                                    .opacity(entranceRevealed ? 1 : 0)
+                                    .offset(y: entranceRevealed ? 0 : 4)
+                                    .animation(
+                                        reduceMotion ? .linear(duration: 0.01) :
+                                            .snappy(duration: 0.25, extraBounce: 0.02)
+                                            .delay(Double(min(idx, 15)) * 0.018),
+                                        value: entranceRevealed
+                                    )
                             }
                         }
                         .padding(.vertical, 4)
@@ -257,27 +346,71 @@ struct TagList: View {
         }
         .focusable()
         .focused($focused)
-        .onAppear { focused = true }
+        .onAppear {
+            focused = true
+            // A5: restore selection
+            if let saved = state.tabSelections["tags"] {
+                selection = min(saved, max(0, tags.count - 1))
+            }
+            if !entranceRevealed { entranceRevealed = true }
+        }
+        .onChange(of: tags.count) { _, _ in
+            entranceRevealed = false
+            DispatchQueue.main.async { entranceRevealed = true }
+        }
+        // A5: persist selection
+        .onChange(of: selection) { _, new in
+            state.tabSelections["tags"] = new
+        }
         .onKeyPress(phases: .down) { press in
             guard !state.showHelp, !tags.isEmpty else { return .ignored }
+
+            // A2: accumulate digit presses
+            if let digit = press.characters.first, digit.isNumber, press.modifiers.isEmpty {
+                if !countBuffer.isEmpty || digit != "0" {
+                    if let t = countBufferTime, Date().timeIntervalSince(t) > 0.8 {
+                        countBuffer = ""
+                    }
+                    countBuffer.append(digit)
+                    countBufferTime = Date()
+                    state.flashStatus(countBuffer)
+                    return .handled
+                }
+            }
+
+            let pageSize = max(5, min(15, tags.count / 5))
+
             switch press.key {
             case .downArrow:
-                selection = min(tags.count - 1, selection + 1); return .handled
+                tagMove(+consumeCount()); return .handled
             case .upArrow:
-                selection = max(0, selection - 1); return .handled
+                tagMove(-consumeCount()); return .handled
             case .rightArrow:
-                state.moveSection(+1); return .handled
+                clearCount(); state.moveSection(+1); return .handled
             case .leftArrow:
-                state.moveSection(-1); return .handled
+                clearCount(); state.moveSection(-1); return .handled
             case .return, .space:
-                onSelect(tags[selection]); return .handled
+                clearCount(); onSelect(tags[selection]); return .handled
+            case .pageDown:
+                tagMove(+pageSize); return .handled
+            case .pageUp:
+                tagMove(-pageSize); return .handled
             default: break
             }
+
+            // A1: Ctrl+d / Ctrl+u
+            if press.modifiers.contains(.control) {
+                let ch = press.characters.lowercased()
+                if ch == "d" { tagMove(+pageSize); return .handled }
+                if ch == "u" { tagMove(-pageSize); return .handled }
+            }
+
             let c = press.characters.lowercased()
             switch c {
-            case "j": selection = min(tags.count - 1, selection + 1); return .handled
-            case "k": selection = max(0, selection - 1); return .handled
+            case "j": tagMove(+consumeCount()); return .handled
+            case "k": tagMove(-consumeCount()); return .handled
             case "g":
+                clearCount()
                 if let t = gPressedAt, Date().timeIntervalSince(t) < 0.6 {
                     selection = 0
                     gPressedAt = nil
@@ -287,16 +420,38 @@ struct TagList: View {
                 return .handled
             default: break
             }
-            if press.characters == "G" { selection = tags.count - 1; return .handled }
+            if press.characters == "G" {
+                clearCount(); selection = tags.count - 1; return .handled
+            }
             return .ignored
         }
     }
+
+    private func consumeCount() -> Int {
+        if let t = countBufferTime, Date().timeIntervalSince(t) > 0.8 {
+            countBuffer = ""; countBufferTime = nil
+        }
+        let count = Int(countBuffer) ?? 1
+        countBuffer = ""; countBufferTime = nil
+        return max(1, count)
+    }
+
+    private func clearCount() {
+        countBuffer = ""; countBufferTime = nil
+    }
+
+    private func tagMove(_ delta: Int) {
+        selection = max(0, min(tags.count - 1, selection + delta))
+    }
 }
+
+// MARK: - Tag Row
 
 private struct TagRow: View {
     let name: String
     let count: Int
     let selected: Bool
+    var selectionNS: Namespace.ID
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -314,10 +469,21 @@ private struct TagRow: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 3)
-        .background(selected ? Color.primary.opacity(0.09) : Color.clear)
+        .background(
+            // B2: matchedGeometryEffect for selection highlight
+            Group {
+                if selected {
+                    Color.primary.opacity(0.09)
+                        .matchedGeometryEffect(id: "tagSelBg", in: selectionNS)
+                } else {
+                    Color.clear
+                }
+            }
+        )
         .overlay(alignment: .leading) {
             if selected {
                 Rectangle().fill(Color.accentColor).frame(width: 2)
+                    .matchedGeometryEffect(id: "tagSelBar", in: selectionNS)
             }
         }
         .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.18, extraBounce: 0.03), value: selected)
@@ -329,14 +495,17 @@ private struct TagRow: View {
 struct FavoritesView: View {
     @EnvironmentObject var store: FavoritesStore
     var body: some View {
-        StationList(stations: store.favorites, emptyText: "no favorites yet — press f on a station")
+        StationList(stations: store.favorites,
+                    emptyText: "no favorites yet — press f on a station",
+                    persistKey: "favorites")
     }
 }
 
 struct RecentsView: View {
     @EnvironmentObject var store: FavoritesStore
     var body: some View {
-        StationList(stations: store.recents, emptyText: "nothing played yet")
+        StationList(stations: store.recents, emptyText: "nothing played yet",
+                    persistKey: "recents")
     }
 }
 

@@ -158,6 +158,10 @@ struct VisualizerDriver: View {
     let volume: Float
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// B5: Track when the play state last changed so we can ramp amplitude smoothly.
+    @State private var playTransitionDate: Date = .distantPast
+    @State private var transitioningToPlay: Bool = false
+
     var body: some View {
         if reduceMotion {
             // Static dots at rest when motion is reduced.
@@ -173,6 +177,16 @@ struct VisualizerDriver: View {
                     displayAmplitudes: .constant(amps)
                 )
             }
+            .onAppear {
+                transitioningToPlay = isPlaying
+                if isPlaying {
+                    playTransitionDate = .distantPast // already playing, no ramp
+                }
+            }
+            .onChange(of: isPlaying) { _, new in
+                playTransitionDate = Date()
+                transitioningToPlay = new
+            }
         }
     }
 
@@ -184,9 +198,20 @@ struct VisualizerDriver: View {
     private static let phases: [Double] = [0.0, 1.2, 2.4, 0.8, 1.6, 3.0]
 
     private func amplitudes(at date: Date) -> [CGFloat] {
-        guard isPlaying else {
+        // B5: Compute ramp factor for smooth idle→playing transition.
+        let elapsed = max(0, date.timeIntervalSince(playTransitionDate))
+        let ramp: CGFloat
+        if transitioningToPlay {
+            ramp = min(1.0, CGFloat(elapsed / 0.5)) // 0.5s ramp up
+        } else {
+            ramp = max(0.0, 1.0 - CGFloat(elapsed / 0.3)) // 0.3s ramp down
+        }
+
+        // Fully ramped down — return zeros.
+        if !isPlaying && ramp <= 0 {
             return Array(repeating: 0, count: 6)
         }
+
         let t = date.timeIntervalSinceReferenceDate
         // Ensure dots stay visible even at very low volume.
         let minimumVisualVolume: Float = 0.3
@@ -199,7 +224,7 @@ struct VisualizerDriver: View {
             let w2 = sin(t * f * 1.5 + p * 0.7)
             let w3 = sin(t * 0.5 + Double(i) * 0.8)
             let combined = (w1 * 0.5 + w2 * 0.3 + w3 * 0.2 + 1) / 2
-            return CGFloat(combined) * v * 50
+            return CGFloat(combined) * v * 50 * ramp
         }
     }
 }
