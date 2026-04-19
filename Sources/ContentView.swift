@@ -4,6 +4,7 @@ struct ContentView: View {
     @EnvironmentObject var state: AppState
     @EnvironmentObject var player: AudioPlayer
     @EnvironmentObject var store: FavoritesStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -28,6 +29,13 @@ struct ContentView: View {
                     case .recents:   RecentsView()
                     }
                 }
+                .id(state.mode)
+                .transition(
+                    .asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.985)),
+                        removal: .opacity
+                    )
+                )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 Divider().opacity(0.18)
@@ -39,7 +47,12 @@ struct ContentView: View {
 
             if state.showHelp {
                 HelpOverlay()
-                    .transition(.opacity)
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                            removal: .opacity
+                        )
+                    )
             }
         }
         .background(
@@ -53,8 +66,8 @@ struct ContentView: View {
             .ignoresSafeArea()
         )
         .background(GlobalShortcuts())
-        .animation(.easeInOut(duration: 0.14), value: state.showHelp)
-        .animation(.easeInOut(duration: 0.14), value: state.mode)
+        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.22, extraBounce: 0.06), value: state.showHelp)
+        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.28, extraBounce: 0.08), value: state.mode)
     }
 }
 

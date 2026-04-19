@@ -10,6 +10,7 @@ struct StationList: View {
     @EnvironmentObject var state: AppState
     @EnvironmentObject var player: AudioPlayer
     @EnvironmentObject var store: FavoritesStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var selection: Int = 0
     @State private var gPressedAt: Date? = nil
@@ -47,8 +48,14 @@ struct StationList: View {
                         }
                         .padding(.vertical, 4)
                     }
-                    .onChange(of: selection) { _, new in
-                        withAnimation(.easeInOut(duration: 0.08)) {
+                    .onChange(of: selection) { old, new in
+                        let distance = abs(new - old)
+                        let animation: Animation = reduceMotion
+                            ? .linear(duration: 0.01)
+                            : (distance > 8
+                                ? .interpolatingSpring(stiffness: 330, damping: 38)
+                                : .snappy(duration: 0.16, extraBounce: 0.04))
+                        withAnimation(animation) {
                             proxy.scrollTo(new, anchor: .center)
                         }
                     }
@@ -128,6 +135,7 @@ struct StationRow: View {
     let playing: Bool
     let favorite: Bool
     let showsIndex: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
@@ -183,5 +191,8 @@ struct StationRow: View {
                     .frame(width: 2)
             }
         }
+        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.18, extraBounce: 0.03), value: selected)
+        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.22, extraBounce: 0.04), value: playing)
+        .animation(reduceMotion ? .linear(duration: 0.01) : .snappy(duration: 0.2, extraBounce: 0.02), value: favorite)
     }
 }
