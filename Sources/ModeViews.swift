@@ -90,7 +90,7 @@ struct SearchView: View {
                     Text("type and press ↵ to search")
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundStyle(.secondary)
-                    Text("esc to clear  ·  S or / to refocus")
+                    Text("esc to clear  ·  S or / to focus")
                         .font(.system(size: 10, design: .monospaced))
                         .foregroundStyle(.secondary.opacity(0.7))
                     Spacer()
